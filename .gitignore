@@ -1,0 +1,14 @@
+# Terraform
+.terraform/
+terraform.tfstate*
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# Sensitive files
+*.pem
+*.key
+
+# Large files
+*.zip
+*.gz
