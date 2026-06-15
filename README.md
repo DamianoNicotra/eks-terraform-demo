@@ -1,65 +1,46 @@
-# EKS Terraform Demo - Kubernetes on AWS
+# EKS Terraform Demo
 
-Kubernetes cluster on AWS EKS with Terraform. Nginx deployed and reachable. Prometheus monitoring attempted but failed due to Free Tier limits.
+[![Terraform CI](https://github.com/DamianoNicotra/eks-terraform-demo/actions/workflows/terraform.yml/badge.svg)](https://github.com/DamianoNicotra/eks-terraform-demo/actions/workflows/terraform.yml)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
-## What worked
+Deploy an Amazon EKS cluster (Kubernetes) on AWS using Terraform.
 
-- EKS cluster created with Terraform (VPC, subnets, node groups)
-- kubectl configured and nodes verified
-- Nginx deployed on Kubernetes with LoadBalancer
-- Application tested (curl returned Welcome to nginx page)
-- Everything destroyed after testing to keep costs near zero
+## ✅ Pipeline Status
 
-## What I wanted to do but failed
+The CI/CD pipeline runs on every push:
+- `terraform fmt -check` (non-blocking)
+- `terraform init`
+- `terraform validate`
+- `terraform plan`
 
-- Install Prometheus + Grafana for cluster monitoring
-- The t3.micro nodes (Free Tier) didn't have enough resources
-- The pods stayed in Pending state. The stack never fully started.
+## Architecture Decisions
 
-## What I learned
+| Decision | Reason |
+|----------|--------|
+| **EKS vs self-managed K8s** | EKS removes control plane management overhead. AWS handles HA and security patches. |
+| **Terraform vs eksctl** | Terraform is cloud-agnostic, reusable, and integrates with existing IaC pipelines. |
+| **Managed node groups** | Simpler than self-managed EC2. AWS handles scaling and AMI updates. |
+| **t3.small nodes** | Cost-effective for development. Balance between price and performance. |
 
-- Kubernetes is powerful but resource-hungry
-- Free Tier has limits. Monitoring requires planning.
-- A partial failure is still a lesson. Next time I will use larger nodes (and destroy them immediately).
+## Known Limitations
 
-## Technologies
+- No cluster autoscaling configured
+- No add-ons (CoreDNS, kube-proxy, VPC CNI) version pinning
+- Terraform state stored locally → not safe for team use
+- No private endpoint access (public endpoint only)
 
-- AWS: EKS, VPC, EC2, LoadBalancer
-- Kubernetes (kubectl)
-- Nginx
-- Infrastructure as Code: Terraform
+## How to Improve
 
-## Trade-offs
+- Add cluster autoscaler for dynamic node scaling
+- Move Terraform state to S3 backend with DynamoDB lock
+- Configure private endpoint + VPN for production security
+- Add AWS Load Balancer Controller for Ingress
+- Deploy monitoring stack (Prometheus + Grafana) via Helm
 
-- EKS control plane costs ~$0.10/hour → destroyed immediately
-- t3.micro vs larger instances → free but underpowered for monitoring
-- Perfect plan vs reality → always test small first
+## Cost Control
 
-## Commands
+**This infrastructure is designed to be destroyable.**
 
+After testing, run:
 ```bash
-# Deploy cluster
-cd terraform
-terraform init
-terraform apply -auto-approve
-
-## Configure kubectl
-aws eks update-kubeconfig --region eu-west-1 --name eks-demo-cluster
-
-## Deploy Nginx
-kubectl create deployment nginx --image=nginx
-kubectl expose deployment nginx --port=80 --type=LoadBalancer
-
-## Test
-curl http://<EXTERNAL-IP>
-
-## Cleanup
 terraform destroy -auto-approve
-
-## Project structure
-eks-terraform-demo/
-├── terraform/
-│   ├── main.tf
-│   ├── variables.tf
-│   └── outputs.tf
-└── README.md
